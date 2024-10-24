@@ -1,0 +1,5 @@
+main {
+  background: #e6ebf1; /* set light blue background color entire the main tag */
+  height: 100vh;
+  padding-inline: 15%;
+}
