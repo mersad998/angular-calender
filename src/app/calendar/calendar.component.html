@@ -70,7 +70,7 @@
       class="border p-2 text-center"
       [ngClass]="{ 'bg-yellow-200': day.isToday }"
     >
-      {{ day.date == 0 ? "" : formattedDay(day.date) }}
+      {{ day.date == 0 ? "" : getLocalizedDayText(day.date) }}
     </div>
   </div>
 </div>

@@ -1,24 +1,20 @@
-import { Component, Inject, inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import moment from 'moment';
-import momentJalaali from 'moment-jalaali';
 import { CommonModule } from '@angular/common';
-import {
-  jalaliWeekDays,
-  gregorianWeekDays,
-  calendarTypes,
-} from './calendar.component.helpers';
+import moment from 'moment';
+
+import { calendarTypes } from './calendar.component.helpers';
+import { CalendarServiceFactory } from '../services/calendarServiceFactory';
 import {
   type CalendarDay,
   type CalendarTypeOption,
   CalendarServiceInterface,
   CalendarType,
 } from './calendar.component.types';
-import { CalendarServiceFactory } from '../services/calendarServiceFactory';
 
 @Component({
   selector: 'app-calendar',
@@ -35,9 +31,7 @@ import { CalendarServiceFactory } from '../services/calendarServiceFactory';
   styleUrl: './calendar.component.css',
 })
 export class CalendarComponent implements OnInit {
-  calendarService!: CalendarServiceInterface;
-  calendarTypes!: CalendarTypeOption[];
-
+  // Inject the CalendarServiceFactory to create the appropriate calendar service.
   constructor(
     @Inject(CalendarServiceFactory)
     private calendarServiceFactory: {
@@ -46,120 +40,127 @@ export class CalendarComponent implements OnInit {
       ) => CalendarServiceInterface;
     }
   ) {
-    // dependency injection
-
+    // Initialize the calendar types dropdown options.
     this.calendarTypes = calendarTypes;
   }
 
-  /**
-   * Angular lifecycle method that initializes the component state.
-   * Calls the methods to initialize the date and update the calendar view.
-   */
+  // when component initiated
   ngOnInit() {
-    this.updateCalendarService(this.selectedCalendarType);
-    this.initializeDate();
-    this.updateCalendar();
+    this.updateCalendarService(this.selectedCalendarType); // set the calendar service with default value (Gregorian)
+    this.updateCurrentDate(); // set the `currentDate` variables trough calendar service
+    this.updateCalendarDaysAndHeaders(); // set the calendar view based on the current date
   }
 
   /**
-   * Stores the currently selected calendar type.
-   * @type {CalendarType}
+   * * * * * * * * * * * * * * * *
+   *  class variables            *
+   * * * * * * * * * * * * * * * *
    */
+
+  // Calendar service to handle calendar-related functions
+  calendarService!: CalendarServiceInterface;
+
+  // Dropdown options for calendar types (Jalali and Gregorian)
+  calendarTypes!: CalendarTypeOption[];
+
+  // Stores the currently selected calendar type trough dropdown (Gregorian by default)
   selectedCalendarType: CalendarType = CalendarType.Gregorian;
 
-  /**
-   * Current month as a formatted string, updated on month change.
-   * @type {string}
-   */
+  // Current date object, used to determine the current year, month, and day
+  currentDate!: moment.Moment;
+
+  // Current year as a formatted and localized string, updated on month change
+  currentYear: string = '';
+
+  // Current month as a formatted and localized string, updated on month change
   currentMonth: string = '';
 
-  /**
-   * Array of days to be displayed in the calendar grid.
-   * @type {CalendarDay[]}
-   */
+  // Array of days to be displayed in the calendar grid.
   calendarDays: CalendarDay[] = [];
 
   /**
-   * Handles changes in the calendar type selection.
-   * Updates week days and calendar view based on the new type.
-   * @param {any} event - Event object containing the selected calendar type.
+   * * * * * * * * * * * * * * * *
+   *  event handlers             *
+   * * * * * * * * * * * * * * * *
    */
-  onCalendarTypeChange(event: { value: CalendarType }) {
-    this.selectedCalendarType = event.value;
-    this.updateCalendarService(event.value);
-    this.initializeDate();
-    this.updateCalendar();
-  }
 
-  /**
-   * Navigates to the previous month.
-   */
+  // Navigates to the previous month
   goToPreviousMonth() {
-    this.currentDate = this.currentDate.add(-1, 'month');
-    this.updateCalendar();
+    this.currentDate = this.currentDate.add(-1, 'month'); // subtract one month from the current date
+    this.updateCalendarDaysAndHeaders(); // update the calendar view based on the new date
   }
 
-  /**
-   * Navigates to the next month.
-   */
+  // Navigates to the next month
   goToNextMonth() {
-    this.currentDate = this.currentDate.add(1, 'month');
-    this.updateCalendar();
+    this.currentDate = this.currentDate.add(1, 'month'); // add one month to the current date
+    this.updateCalendarDaysAndHeaders(); // update the calendar view based on the new date
+  }
+
+  // Event handler for when the user changes the calendar type
+  onCalendarTypeChange(event: { value: CalendarType }) {
+    this.selectedCalendarType = event.value; // update the selected calendar type variable
+    this.updateCalendarService(event.value); // call service factory to update the calendar service based on the selected type
+    this.updateCurrentDate(); // set the `currentDate` variables trough calendar service
+    this.updateCalendarDaysAndHeaders(); // set the calendar view based on the current date
+  }
+
+  // each calendar type has its own service, this function updates the calendar service based on the selected calendar type
+  private updateCalendarService(calendarType: CalendarType) {
+    this.calendarService =
+      this.calendarServiceFactory.initializeService(calendarType);
   }
 
   /**
-   * Formats the given day based on the selected calendar type.
-   * @param {number} day - The day number to format.
-   * @returns {string | number} - The formatted day.
+   * * * * * * * * * * * * * * * *
+   *  utility functions          *
+   * * * * * * * * * * * * * * * *
    */
-  formattedDay(day: number) {
+
+  // use the calendar service to get the localized day text ( persian / latin characters )
+  getLocalizedDayText(day: number) {
     return this.calendarService?.latinToPersianNumber
       ? this.calendarService.latinToPersianNumber(day)
       : day;
   }
 
   /**
-   * Current year, formatted according to the selected calendar type.
-   * @type {number}
+   * * * * * * * * * * * * * * * *
+   *  service controllers        *
+   * * * * * * * * * * * * * * * *
    */
-  private currentYear: string = '';
 
-  /**
-   * Internal variable to track the currently displayed date.
-   * @type {moment.Moment}
-   */
-  private currentDate!: moment.Moment;
-
-  private updateCalendarService(calendarType: CalendarType) {
-    this.calendarService =
-      this.calendarServiceFactory.initializeService(calendarType);
-  }
-
-  private initializeDate() {
+  // set local `currentDate` variable based on the current date in calendar service
+  private updateCurrentDate() {
     if (this.calendarService) {
       this.currentDate = this.calendarService.initializeDate();
     }
   }
 
-  /**
-   * Determines if the selected calendar type is Jalali.
-   * @returns {boolean} - True if the calendar type is Jalali, false otherwise.
-   */
-  private get isJalali(): boolean {
-    return this.selectedCalendarType === CalendarType.Jalali;
+  // Updates the calendar view (header info and days) based on the current date
+  private updateCalendarDaysAndHeaders() {
+    this.updateCurrentMonthAndYear(); // header info
+    this.generateCalendarDays(); // calendar days
   }
 
-  /**
-   * Updates the calendar view by setting the current month and year
-   * and generating the days to be displayed.
-   */
-  private updateCalendar() {
-    this.updateCurrentMonthAndYear();
-    this.generateCalendarDays();
+  // Updates the current month and year based on the selected calendar type
+  // this value is used to display the current month and year in the calendar header
+  private updateCurrentMonthAndYear() {
+    if (this.calendarService) {
+      // use the calendar service to get the current month and year based on the current calendar type
+      const { month, year } = this.calendarService.getCurrentMonthAndYear(
+        this.currentDate
+      );
+
+      // update local variables
+      this.currentMonth = month;
+      this.currentYear = year;
+    }
   }
 
+  // Add empty cells to align the first day of the month with the correct weekday.
   private generateCalendarDays() {
     if (this.calendarService) {
+      // use the calendar service to generate the calendar days based on the current date
       this.calendarDays = this.calendarService.generateCalendarDays(
         this.currentDate
       );
@@ -167,57 +168,43 @@ export class CalendarComponent implements OnInit {
   }
 
   /**
-   * Updates the current month and year based on the selected calendar type.
+   * * * * * * * * * * * * * * * *
+   *  getters for use in HTML    *
+   * * * * * * * * * * * * * * * *
    */
-  private updateCurrentMonthAndYear() {
-    if (this.calendarService) {
-      const { month, year } = this.calendarService.getCurrentMonthAndYear(
-        this.currentDate
-      );
-      this.currentMonth = month;
-      this.currentYear = year;
-    }
-  }
 
-  // get ui properties
-
-  /**
-   * List of days in a week, dynamically updated based on calendar type.
-   * @type {string[]}
-   */
+  // get the localized week days ( persian / latin week days )
   get weekDays() {
     return this.calendarService?.weekDays ?? [];
   }
 
-  /**
-   * Determines the direction of the calendar based on calendar type.
-   * @returns {string} - 'rtl' if Jalali, 'ltr' if Gregorian.
-   */
+  // get the formatted current month ( persian / latin month )
+  get formattedCurrentYear() {
+    return this.currentYear;
+  }
+
+  // get the calendar direction ( rtl / ltr )
   get calendarDirection() {
     return this.calendarService.calendarDirection;
   }
 
+  // get the previous month icon name ( arrow_forward / arrow_back )
   get previousIcon() {
     return this.calendarService.previousMonthIconName;
   }
 
+  // get the next month icon name ( arrow_forward / arrow_back )
   get nextIcon() {
     return this.calendarService.nextMonthIconName;
   }
 
+  // get the previous month text ( persian / latin text )
   get previousText() {
     return this.calendarService.previousMonthText;
   }
 
+  // get the next month text ( persian / latin text )
   get nextText() {
     return this.calendarService.nextMonthText;
-  }
-
-  /**
-   * Formats the current year based on calendar type.
-   * @returns {string | number} - The formatted year.
-   */
-  get formattedCurrentYear() {
-    return this.currentYear;
   }
 }

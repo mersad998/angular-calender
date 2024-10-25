@@ -6,6 +6,10 @@ import {
 } from '../calendar/calendar.component.types';
 import { Injectable } from '@angular/core';
 
+/**
+ * Factory class to create the appropriate calendar service based on the calendar type.
+ */
+
 @Injectable({
   providedIn: 'root',
 })
@@ -17,7 +21,9 @@ export class CalendarServiceFactory {
       return new GregorianCalendarService();
     } else if (type === CalendarType.Jalali) {
       return new JalaliCalendarService();
-    } else {
+    }
+    // we can add arabic or any other calender here
+    else {
       throw new Error('Invalid calendar type');
     }
   }
