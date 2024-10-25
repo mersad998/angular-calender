@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import {
   jalaliWeekDays,
   gregorianWeekDays,
+  calendarTypes,
 } from './calendar.component.helpers';
 import {
   type CalendarDay,
@@ -35,6 +36,7 @@ import { CalendarServiceFactory } from '../services/calendarServiceFactory';
 })
 export class CalendarComponent implements OnInit {
   calendarService!: CalendarServiceInterface;
+  calendarTypes!: CalendarTypeOption[];
 
   constructor(
     @Inject(CalendarServiceFactory)
@@ -45,6 +47,8 @@ export class CalendarComponent implements OnInit {
     }
   ) {
     // dependency injection
+
+    this.calendarTypes = calendarTypes;
   }
 
   /**
@@ -53,24 +57,9 @@ export class CalendarComponent implements OnInit {
    */
   ngOnInit() {
     this.updateCalendarService(this.selectedCalendarType);
-
     this.initializeDate();
     this.updateCalendar();
   }
-
-  private updateCalendarService(calendarType: CalendarType) {
-    this.calendarService =
-      this.calendarServiceFactory.initializeService(calendarType);
-  }
-
-  /**
-   * Dropdown options for calendar types (Jalali and Gregorian).
-   * @type {CalendarTypeOption[]}
-   */
-  calendarTypes: CalendarTypeOption[] = [
-    { value: CalendarType.Gregorian, viewValue: 'میلادی' },
-    { value: CalendarType.Jalali, viewValue: 'شمسی' },
-  ];
 
   /**
    * Stores the currently selected calendar type.
@@ -79,34 +68,16 @@ export class CalendarComponent implements OnInit {
   selectedCalendarType: CalendarType = CalendarType.Gregorian;
 
   /**
-   * List of days in a week, dynamically updated based on calendar type.
-   * @type {string[]}
-   */
-  weekDays = gregorianWeekDays;
-
-  /**
    * Current month as a formatted string, updated on month change.
    * @type {string}
    */
   currentMonth: string = '';
 
   /**
-   * Current year, formatted according to the selected calendar type.
-   * @type {number}
-   */
-  currentYear: number = 0;
-
-  /**
    * Array of days to be displayed in the calendar grid.
    * @type {CalendarDay[]}
    */
   calendarDays: CalendarDay[] = [];
-
-  /**
-   * Internal variable to track the currently displayed date.
-   * @type {moment.Moment}
-   */
-  private currentDate!: moment.Moment;
 
   /**
    * Handles changes in the calendar type selection.
@@ -117,14 +88,7 @@ export class CalendarComponent implements OnInit {
     this.selectedCalendarType = event.value;
     this.updateCalendarService(event.value);
     this.initializeDate();
-    this.updateWeekDays();
     this.updateCalendar();
-  }
-
-  private initializeDate() {
-    if (this.calendarService) {
-      this.currentDate = this.calendarService.initializeDate();
-    }
   }
 
   /**
@@ -142,21 +106,39 @@ export class CalendarComponent implements OnInit {
     this.currentDate = this.currentDate.add(1, 'month');
     this.updateCalendar();
   }
+
   /**
-   * Updates the `weekDays` array based on the selected calendar type.
+   * Formats the given day based on the selected calendar type.
+   * @param {number} day - The day number to format.
+   * @returns {string | number} - The formatted day.
    */
-  private updateWeekDays() {
-    this.weekDays = this.isJalali ? jalaliWeekDays : gregorianWeekDays;
+  formattedDay(day: number) {
+    return this.calendarService?.latinToPersianNumber
+      ? this.calendarService.latinToPersianNumber(day)
+      : day;
   }
 
   /**
-   * Adjusts the current month by a given number of months.
-   * Updates the calendar view to reflect the new month.
-   * @param {number} step - The number of months to adjust by (positive or negative).
+   * Current year, formatted according to the selected calendar type.
+   * @type {number}
    */
-  private changeMonth(step: number) {
-    this.currentDate = this.currentDate.add(step, 'month');
-    this.updateCalendar();
+  private currentYear: string = '';
+
+  /**
+   * Internal variable to track the currently displayed date.
+   * @type {moment.Moment}
+   */
+  private currentDate!: moment.Moment;
+
+  private updateCalendarService(calendarType: CalendarType) {
+    this.calendarService =
+      this.calendarServiceFactory.initializeService(calendarType);
+  }
+
+  private initializeDate() {
+    if (this.calendarService) {
+      this.currentDate = this.calendarService.initializeDate();
+    }
   }
 
   /**
@@ -175,6 +157,7 @@ export class CalendarComponent implements OnInit {
     this.updateCurrentMonthAndYear();
     this.generateCalendarDays();
   }
+
   private generateCalendarDays() {
     if (this.calendarService) {
       this.calendarDays = this.calendarService.generateCalendarDays(
@@ -182,6 +165,7 @@ export class CalendarComponent implements OnInit {
       );
     }
   }
+
   /**
    * Updates the current month and year based on the selected calendar type.
    */
@@ -195,15 +179,14 @@ export class CalendarComponent implements OnInit {
     }
   }
 
+  // get ui properties
+
   /**
-   * Formats the given day based on the selected calendar type.
-   * @param {number} day - The day number to format.
-   * @returns {string | number} - The formatted day.
+   * List of days in a week, dynamically updated based on calendar type.
+   * @type {string[]}
    */
-  formattedDay(day: number) {
-    return this.isJalali && this.calendarService?.latinToPersianNumber
-      ? this.calendarService.latinToPersianNumber(day)
-      : day;
+  get weekDays() {
+    return this.calendarService?.weekDays ?? [];
   }
 
   /**
@@ -211,39 +194,23 @@ export class CalendarComponent implements OnInit {
    * @returns {string} - 'rtl' if Jalali, 'ltr' if Gregorian.
    */
   get calendarDirection() {
-    return this.isJalali ? 'rtl' : 'ltr';
+    return this.calendarService.calendarDirection;
   }
 
-  /**
-   * Determines the icon for the previous month button based on calendar type.
-   * @returns {string} - The icon name ('arrow_forward' or 'arrow_back').
-   */
   get previousIcon() {
-    return this.isJalali ? 'arrow_forward' : 'arrow_back';
+    return this.calendarService.previousMonthIconName;
   }
 
-  /**
-   * Determines the icon for the next month button based on calendar type.
-   * @returns {string} - The icon name ('arrow_back' or 'arrow_forward').
-   */
   get nextIcon() {
-    return this.isJalali ? 'arrow_back' : 'arrow_forward';
+    return this.calendarService.nextMonthIconName;
   }
 
-  /**
-   * Determines the label for the previous month button.
-   * @returns {string} - 'ماه قبل' for Jalali, 'Previous' for Gregorian.
-   */
   get previousText() {
-    return this.isJalali ? 'ماه قبل' : 'Previous';
+    return this.calendarService.previousMonthText;
   }
 
-  /**
-   * Determines the label for the next month button.
-   * @returns {string} - 'ماه بعد' for Jalali, 'Next' for Gregorian.
-   */
   get nextText() {
-    return this.isJalali ? 'ماه بعد' : 'Next';
+    return this.calendarService.nextMonthText;
   }
 
   /**
@@ -251,8 +218,6 @@ export class CalendarComponent implements OnInit {
    * @returns {string | number} - The formatted year.
    */
   get formattedCurrentYear() {
-    return this.isJalali
-      ? this.calendarService.latinToPersianNumber(this.currentYear)
-      : this.currentYear;
+    return this.currentYear;
   }
 }

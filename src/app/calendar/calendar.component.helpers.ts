@@ -1,3 +1,5 @@
+import { CalendarType, CalendarTypeOption } from './calendar.component.types';
+
 export const jalaliMonthTranslations: { [key: string]: string } = {
   Farvardin: 'فروردین',
   Ordibehesht: 'اردیبهشت',
@@ -31,4 +33,13 @@ export const gregorianWeekDays = [
   'Wednesday',
   'Thursday',
   'Friday',
+];
+
+/**
+ * Dropdown options for calendar types (Jalali and Gregorian).
+ * @type {CalendarTypeOption[]}
+ */
+export const calendarTypes: CalendarTypeOption[] = [
+  { value: CalendarType.Gregorian, viewValue: 'میلادی' },
+  { value: CalendarType.Jalali, viewValue: 'شمسی' },
 ];

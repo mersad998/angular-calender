@@ -10,11 +10,6 @@ import { Injectable } from '@angular/core';
   providedIn: 'root',
 })
 export class CalendarServiceFactory {
-  /**
-   * Initialize the appropriate calendar service based on the type.
-   * @param type CalendarType - type of calendar to initialize
-   * @returns CalendarServiceInterface - instance of the selected calendar service
-   */
   initializeService(
     type: CalendarType.Gregorian | CalendarType.Jalali
   ): CalendarServiceInterface {

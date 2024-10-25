@@ -19,8 +19,15 @@ export interface CalendarServiceInterface {
   getEndOfMonth(currentDate: moment.Moment): moment.Moment;
   getCurrentMonthAndYear(currentDate: moment.Moment): {
     month: string;
-    year: number;
+    year: string;
   };
   generateCalendarDays(currentDate: moment.Moment): CalendarDay[];
-  latinToPersianNumber(number: string | number): string; // Optional for Jalali service
+  latinToPersianNumber?(number: string | number): string; // Optional for Jalali service
+
+  weekDays: string[];
+  calendarDirection: 'rtl' | 'ltr';
+  previousMonthIconName: string;
+  nextMonthIconName: string;
+  previousMonthText: string;
+  nextMonthText: string;
 }
