@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
-import { CalenderComponent } from './calender/calender.component';
 import { HeaderComponent } from './header/header.component';
+import { CalendarComponent } from './calendar/calendar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CalenderComponent, HeaderComponent],
+  imports: [RouterOutlet, CalendarComponent, HeaderComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })

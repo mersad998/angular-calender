@@ -1,0 +1,11 @@
+/* RTL for Jalali */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* LTR for Gregorian */
+.ltr {
+  direction: ltr;
+  text-align: left;
+}
