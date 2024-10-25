@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -15,8 +15,10 @@ import {
 import {
   type CalendarDay,
   type CalendarTypeOption,
+  CalendarServiceInterface,
   CalendarType,
 } from './calendar.component.types';
+import { CalendarServiceFactory } from '../services/calendarServiceFactory';
 
 @Component({
   selector: 'app-calendar',
@@ -33,6 +35,38 @@ import {
   styleUrl: './calendar.component.css',
 })
 export class CalendarComponent implements OnInit {
+  calendarService: CalendarServiceInterface | undefined;
+
+  constructor(
+    @Inject(CalendarServiceFactory)
+    private calendarServiceFactory: {
+      initializeService: (
+        type: CalendarType.Gregorian | CalendarType.Jalali
+      ) => CalendarServiceInterface;
+    }
+  ) {
+    // Initialize Jalali month translations from helper.
+    this.jalaliMonthTranslations = jalaliMonthTranslations;
+  }
+
+  /**
+   * Angular lifecycle method that initializes the component state.
+   * Calls the methods to initialize the date and update the calendar view.
+   */
+  ngOnInit() {
+    this.updateCalendarService(this.selectedCalendarType);
+
+    this.initializeDate();
+    this.updateCalendar();
+  }
+
+  private updateCalendarService(calendarType: CalendarType) {
+    this.calendarService =
+      this.calendarServiceFactory.initializeService(calendarType);
+
+    console.log('this.calendarService.getTest(): ', this.calendarService.getTest());
+  }
+
   /**
    * Translation of Jalali month names from Latin characters to Persian.
    * @constant {Object} jalaliMonthTranslations
@@ -84,27 +118,14 @@ export class CalendarComponent implements OnInit {
    */
   private currentDate!: moment.Moment;
 
-  constructor() {
-    // Initialize Jalali month translations from helper.
-    this.jalaliMonthTranslations = jalaliMonthTranslations;
-  }
-
-  /**
-   * Angular lifecycle method that initializes the component state.
-   * Calls the methods to initialize the date and update the calendar view.
-   */
-  ngOnInit() {
-    this.initializeDate();
-    this.updateCalendar();
-  }
-
   /**
    * Handles changes in the calendar type selection.
    * Updates week days and calendar view based on the new type.
    * @param {any} event - Event object containing the selected calendar type.
    */
-  onCalendarTypeChange(event: any) {
+  onCalendarTypeChange(event: { value: CalendarType }) {
     this.selectedCalendarType = event.value;
+    this.updateCalendarService(event.value);
     this.initializeDate();
     this.updateWeekDays();
     this.updateCalendar();

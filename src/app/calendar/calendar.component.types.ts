@@ -12,3 +12,7 @@ export interface CalendarTypeOption {
   value: CalendarType;
   viewValue: string;
 }
+
+export interface CalendarServiceInterface {
+  getTest(): string;
+}
