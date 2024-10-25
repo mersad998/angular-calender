@@ -8,7 +8,6 @@ import moment from 'moment';
 import momentJalaali from 'moment-jalaali';
 import { CommonModule } from '@angular/common';
 import {
-  jalaliMonthTranslations,
   jalaliWeekDays,
   gregorianWeekDays,
 } from './calendar.component.helpers';
@@ -35,7 +34,7 @@ import { CalendarServiceFactory } from '../services/calendarServiceFactory';
   styleUrl: './calendar.component.css',
 })
 export class CalendarComponent implements OnInit {
-  calendarService: CalendarServiceInterface | undefined;
+  calendarService!: CalendarServiceInterface;
 
   constructor(
     @Inject(CalendarServiceFactory)
@@ -45,8 +44,7 @@ export class CalendarComponent implements OnInit {
       ) => CalendarServiceInterface;
     }
   ) {
-    // Initialize Jalali month translations from helper.
-    this.jalaliMonthTranslations = jalaliMonthTranslations;
+    // dependency injection
   }
 
   /**
@@ -63,15 +61,7 @@ export class CalendarComponent implements OnInit {
   private updateCalendarService(calendarType: CalendarType) {
     this.calendarService =
       this.calendarServiceFactory.initializeService(calendarType);
-
-    console.log('this.calendarService.getTest(): ', this.calendarService.getTest());
   }
-
-  /**
-   * Translation of Jalali month names from Latin characters to Persian.
-   * @constant {Object} jalaliMonthTranslations
-   */
-  jalaliMonthTranslations: { [key: string]: string };
 
   /**
    * Dropdown options for calendar types (Jalali and Gregorian).
@@ -131,30 +121,27 @@ export class CalendarComponent implements OnInit {
     this.updateCalendar();
   }
 
+  private initializeDate() {
+    if (this.calendarService) {
+      this.currentDate = this.calendarService.initializeDate();
+    }
+  }
+
   /**
    * Navigates to the previous month.
    */
   goToPreviousMonth() {
-    this.changeMonth(-1);
+    this.currentDate = this.currentDate.add(-1, 'month');
+    this.updateCalendar();
   }
 
   /**
    * Navigates to the next month.
    */
   goToNextMonth() {
-    this.changeMonth(1);
+    this.currentDate = this.currentDate.add(1, 'month');
+    this.updateCalendar();
   }
-
-  /**
-   * Initializes the currentDate to the start of the day,
-   * depending on the selected calendar type.
-   */
-  private initializeDate() {
-    this.currentDate = this.isJalali
-      ? momentJalaali().startOf('day')
-      : moment().startOf('day');
-  }
-
   /**
    * Updates the `weekDays` array based on the selected calendar type.
    */
@@ -181,26 +168,6 @@ export class CalendarComponent implements OnInit {
   }
 
   /**
-   * Retrieves the start date of the current month, adjusted for calendar type.
-   * @returns {moment.Moment} - The start date of the month.
-   */
-  private getStartOfMonth() {
-    return this.isJalali
-      ? momentJalaali(this.currentDate).startOf('jMonth')
-      : this.currentDate.clone().startOf('month');
-  }
-
-  /**
-   * Retrieves the end date of the current month, adjusted for calendar type.
-   * @returns {moment.Moment} - The end date of the month.
-   */
-  private getEndOfMonth() {
-    return this.isJalali
-      ? momentJalaali(this.currentDate).endOf('jMonth')
-      : this.currentDate.clone().endOf('month');
-  }
-
-  /**
    * Updates the calendar view by setting the current month and year
    * and generating the days to be displayed.
    */
@@ -208,79 +175,36 @@ export class CalendarComponent implements OnInit {
     this.updateCurrentMonthAndYear();
     this.generateCalendarDays();
   }
-
+  private generateCalendarDays() {
+    if (this.calendarService) {
+      this.calendarDays = this.calendarService.generateCalendarDays(
+        this.currentDate
+      );
+    }
+  }
   /**
    * Updates the current month and year based on the selected calendar type.
    */
   private updateCurrentMonthAndYear() {
-    if (this.isJalali) {
-      this.currentMonth =
-        this.jalaliMonthTranslations[this.currentDate.format('jMMMM')] || '';
-      this.currentYear = this.currentDate.jYear();
-    } else {
-      this.currentMonth = this.currentDate.format('MMMM');
-      this.currentYear = this.currentDate.year();
+    if (this.calendarService) {
+      const { month, year } = this.calendarService.getCurrentMonthAndYear(
+        this.currentDate
+      );
+      this.currentMonth = month;
+      this.currentYear = year;
     }
   }
 
   /**
-   * Generates the array of days to display in the calendar view.
-   * It includes empty days for alignment and actual dates.
+   * Formats the given day based on the selected calendar type.
+   * @param {number} day - The day number to format.
+   * @returns {string | number} - The formatted day.
    */
-  private generateCalendarDays() {
-    const startOfMonth = this.getStartOfMonth();
-    const endOfMonth = this.getEndOfMonth();
-    const today = this.isJalali ? momentJalaali() : moment();
-
-    this.calendarDays = [];
-    const startDayOffset = (startOfMonth.day() + 1) % 7;
-
-    this.fillEmptyDays(startDayOffset);
-    this.fillDaysOfMonth(startOfMonth, endOfMonth, today);
+  formattedDay(day: number) {
+    return this.isJalali && this.calendarService?.latinToPersianNumber
+      ? this.calendarService.latinToPersianNumber(day)
+      : day;
   }
-
-  /**
-   * Fills the calendar view with empty days for alignment purposes.
-   * @param {number} count - The number of empty days to insert.
-   */
-  private fillEmptyDays(count: number) {
-    for (let i = 0; i < count; i++) {
-      this.calendarDays.push({ date: 0, isToday: false });
-    }
-  }
-
-  /**
-   * Fills the calendar view with the actual days of the month.
-   * Marks the current day if it matches today's date.
-   * @param {moment.Moment} startOfMonth - The start date of the month.
-   * @param {moment.Moment} endOfMonth - The end date of the month.
-   * @param {moment.Moment} today - The current day.
-   */
-  private fillDaysOfMonth(
-    startOfMonth: moment.Moment,
-    endOfMonth: moment.Moment,
-    today: moment.Moment
-  ) {
-    const dateGetter = this.isJalali ? 'jDate' : 'date';
-
-    for (
-      let day = startOfMonth[dateGetter]();
-      day <= endOfMonth[dateGetter]();
-      day++
-    ) {
-      const date = startOfMonth.clone()[dateGetter](day);
-      const isToday = date.isSame(today, 'day');
-      this.calendarDays.push({ date: day, isToday });
-    }
-  }
-
-  /**
-   * Converts Latin numbers to Persian numerals.
-   * @param {string | number} latinNumber - The number to convert.
-   * @returns {string} - The number in Persian numerals.
-   */
-  private latinToPersianNumber = (latinNumber: string | number) =>
-    latinNumber?.toString().replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 
   /**
    * Determines the direction of the calendar based on calendar type.
@@ -328,16 +252,7 @@ export class CalendarComponent implements OnInit {
    */
   get formattedCurrentYear() {
     return this.isJalali
-      ? this.latinToPersianNumber(this.currentYear)
+      ? this.calendarService.latinToPersianNumber(this.currentYear)
       : this.currentYear;
-  }
-
-  /**
-   * Formats the given day based on the selected calendar type.
-   * @param {number} day - The day number to format.
-   * @returns {string | number} - The formatted day.
-   */
-  formattedDay(day: number) {
-    return this.isJalali ? this.latinToPersianNumber(day) : day;
   }
 }
