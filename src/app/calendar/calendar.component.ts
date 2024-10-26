@@ -6,6 +6,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import moment from 'moment';
+import {
+  trigger,
+  state,
+  style,
+  transition,
+  animate,
+} from '@angular/animations';
 
 import { calendarTypes } from './calendar.component.helpers';
 import { CalendarServiceFactory } from '../services/calendarServiceFactory';
@@ -29,6 +36,14 @@ import {
   ],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.css',
+  animations: [
+    trigger('transitionMessages', [
+      state('void', style({ opacity: 0 })),
+      state('*', style({ opacity: 1 })),
+      transition('void => *', animate('300ms ease-in')),
+      transition('* => void', animate('300ms ease-out')),
+    ]),
+  ],
 })
 export class CalendarComponent implements OnInit {
   // Inject the CalendarServiceFactory to create the appropriate calendar service.
